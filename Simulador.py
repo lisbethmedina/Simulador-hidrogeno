@@ -331,26 +331,29 @@ with pestanas[3]:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 1. Ecuación de Schrödinger")
-        st.latex(r"\hat{H}\psi = E\psi")
-        st.write("Esta ecuación de valores propios describe los estados estacionarios del electrón en el potencial coulombiano del protón.")
+        st.markdown("### 1. Modelo Atómico de Bohr (1913)")
+        st.write("Bohr postuló que el electrón se mueve en órbitas circulares cuantizadas. La energía de estos niveles discretos está dada por:")
+        st.latex(r"E_n = -\frac{13.6 \text{ eV}}{n^2}")
+        st.write("Este modelo explica perfectamente las líneas espectrales del hidrógeno, pero no describe la distribución espacial real del electrón.")
 
-        st.markdown("### 2. Densidad de Probabilidad")
-        st.latex(r"\rho(x,y,z) = |\psi(x,y,z)|^2")
-        st.write("Representa la probabilidad por unidad de volumen de encontrar al electrón en una posición específica del espacio.")
+        st.markdown("### 2. Ecuación de Schrödinger (1926)")
+        st.latex(r"\hat{H}\psi = E\psi")
+        st.write("La mecánica cuántica ondulatoria reemplaza las órbitas definidas de Bohr por **orbitales** (funciones de onda $\psi$), describiendo la probabilidad de encontrar al electrón en el espacio.")
 
     with col2:
-        st.markdown("### 3. Validación: Transición $3 \\to 2$")
+        st.markdown("### 3. Densidad de Probabilidad")
+        st.latex(r"\rho(x,y,z) = |\psi(x,y,z)|^2")
+        st.write("Representa la 'nube electrónica'. Las superficies 3D que visualizas en la Pestaña 1 son isosuperficies de esta densidad de probabilidad.")
+
+        st.markdown("### 4. Validación: Transición $3 \\to 2$")
         E_val, lam_val, _ = calcular_transicion(3, 2)
         st.write(f"Energía calculada: **{E_val:.4f} eV**")
         st.write(f"Longitud de onda: **{lam_val:.2f} nm**")
-        st.write("Este valor coincide con la línea espectral $H\\alpha$ (656.3 nm) de la serie de Balmer, validando el modelo de Bohr para el átomo de hidrógeno.")
+        st.write("Este valor coincide con la línea espectral $H\\alpha$ (656.3 nm) de la Serie de Balmer, validando la cuantización de la energía propuesta por Bohr.")
 
     st.divider()
     st.markdown("### Alcance y Limitaciones")
     st.write(
-        "El presente simulador permite visualizar la distribución espacial de los orbitales, "
-        "comparar niveles de energía cuantizados y calcular transiciones electrónicas. "
-        "Como modelo educativo, no contempla efectos de estructura fina, espín del electrón, "
-        "ni la interacción con campos electromagnéticos externos."
+        "El presente simulador integra el **modelo de Bohr** (para calcular niveles de energía y espectro de emisión) y el **modelo cuántico de Schrödinger** (para visualizar la forma de los orbitales). "
+        "Como modelo educativo, no contempla efectos de estructura fina, espín del electrón, ni la interacción con campos electromagnéticos externos."
     )

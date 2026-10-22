@@ -135,60 +135,109 @@ def crear_grafica_orbital(orbital, extension, resolucion, umbral):
     )
     return figura
 
-def crear_grafica_niveles(nivel_seleccionado=3):
-    """Dibuja los niveles de energía cuantizados del átomo con visualización del límite de ionización."""
+def crear_grafica_niveles(nivel_seleccionado=3, campo_magnetico=0):
+    """Dibuja los niveles de energía con efecto Zeeman si hay campo magnético."""
     niveles = np.arange(1, 7)
-    energias = [calcular_energia_nivel(int(n)) for n in niveles]
+    mu_B = 5.788e-5  # Magnetón de Bohr en eV/T
     
     figura = go.Figure()
 
-    for n, energia in zip(niveles, energias):
-        color = "#38bdf8" if n == nivel_seleccionado else "#718096"
-        ancho = 4 if n == nivel_seleccionado else 2
+    for n in niveles:
+        energia_base = calcular_energia_nivel(int(n))
         
-        # Línea del nivel de energía
-        figura.add_trace(go.Scatter(
-            x=[0.2, 0.8], y=[energia, energia], mode="lines+markers",
-            line=dict(width=ancho, color=color), 
-            marker=dict(size=10, color=color),
-            name=f"n={n}: {energia:.3f} eV",
-            hovertemplate=f"Nivel n={n}<br>Energía={energia:.4f} eV<extra></extra>",
-            showlegend=False
-        ))
+        # Determinar los posibles valores de m_l para este nivel
+        l_max = n - 1
+        m_l_values = list(range(-l_max, l_max + 1))
         
-        # Etiqueta a la derecha de cada nivel
-        figura.add_annotation(
-            x=0.85, y=energia,
-            text=f"<b>n={n}</b><br>{energia:.2f} eV",
-            showarrow=False,
-            font=dict(color="#eaf2ff", size=11),
-            xanchor="left",
-            bgcolor="rgba(30, 41, 59, 0.7)",
-            bordercolor="#38bdf8" if n == nivel_seleccionado else "#718096",
-            borderwidth=1,
-            borderpad=4
-        )
+        if campo_magnetico == 0:
+            # Sin campo magnético: nivel normal
+            color = "#38bdf8" if n == nivel_seleccionado else "#718096"
+            ancho = 4 if n == nivel_seleccionado else 2
+            
+            figura.add_trace(go.Scatter(
+                x=[0.2, 0.8], y=[energia_base, energia_base], mode="lines+markers",
+                line=dict(width=ancho, color=color), 
+                marker=dict(size=10, color=color),
+                name=f"n={n}: {energia_base:.3f} eV",
+                hovertemplate=f"Nivel n={n}<br>Energía={energia_base:.4f} eV<extra></extra>",
+                showlegend=False
+            ))
+            
+            figura.add_annotation(
+                x=0.85, y=energia_base,
+                text=f"<b>n={n}</b><br>{energia_base:.2f} eV",
+                showarrow=False,
+                font=dict(color="#eaf2ff", size=11),
+                xanchor="left",
+                bgcolor="rgba(30, 41, 59, 0.7)",
+                bordercolor="#38bdf8" if n == nivel_seleccionado else "#718096",
+                borderwidth=1,
+                borderpad=4
+            )
+        else:
+            # CON campo magnético: efecto Zeeman (splitting)
+            for i, m_l in enumerate(m_l_values):
+                # Calcular el desplazamiento por efecto Zeeman
+                delta_E = mu_B * campo_magnetico * m_l
+                energia_zeeman = energia_base + delta_E
+                
+                # Color diferente para cada m_l
+                if n == nivel_seleccionado:
+                    colores_m_l = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"]
+                    color = colores_m_l[i % len(colores_m_l)]
+                else:
+                    color = "#718096"
+                
+                ancho = 3 if n == nivel_seleccionado else 2
+                
+                figura.add_trace(go.Scatter(
+                    x=[0.2 + i*0.05, 0.8 - i*0.05], y=[energia_zeeman, energia_zeeman], 
+                    mode="lines+markers",
+                    line=dict(width=ancho, color=color), 
+                    marker=dict(size=8, color=color),
+                    name=f"n={n}, m_l={m_l}",
+                    hovertemplate=f"n={n}, m_l={m_l}<br>E={energia_zeeman:.4f} eV<br>ΔE={delta_E:.4e} eV<extra></extra>",
+                    showlegend=False
+                ))
+                
+                # Etiqueta solo para el nivel seleccionado
+                if n == nivel_seleccionado:
+                    figura.add_annotation(
+                        x=0.85, y=energia_zeeman,
+                        text=f"n={n}<br>m_l={m_l}<br>{energia_zeeman:.3f} eV",
+                        showarrow=False,
+                        font=dict(color="#eaf2ff", size=9),
+                        xanchor="left",
+                        bgcolor="rgba(30, 41, 59, 0.8)",
+                        bordercolor=color,
+                        borderwidth=1,
+                        borderpad=3
+                    )
 
-    # Línea de ionización (E=0)
+    # Línea de ionización
     figura.add_hline(y=0, line_dash="dash", line_color="#ef4444", opacity=0.7, line_width=2)
     figura.add_annotation(
         x=0.5, y=0.15,
-        text="⚡ Límite de ionización (E = 0 eV)",
+        text=" Límite de ionización (E = 0 eV)",
         showarrow=False,
-        font=dict(color="#ef4444", size=12, family="Arial"),
-        xanchor="center",
-        bgcolor="rgba(15, 23, 42, 0.8)",
-        borderpad=5
+        font=dict(color="#ef4444", size=12),
+        xanchor="center"
     )
 
-    # Configuración del layout
+    # Título dinámico
+    if campo_magnetico > 0:
+        titulo = f"Niveles de Energía con Efecto Zeeman (B = {campo_magnetico:.1f} T)"
+    else:
+        titulo = "Niveles de Energía Cuantizados"
+
     figura.update_layout(
-        height=500, 
-        margin=dict(l=60, r=130, t=30, b=40),
+        height=550, 
+        margin=dict(l=60, r=150, t=30, b=40),
         showlegend=False,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(15, 23, 42, 0.5)",
         font=dict(color="#eaf2ff", family="Arial"),
+        title=dict(text=titulo, x=0.5, font=dict(size=16, color="#38bdf8")),
         xaxis=dict(visible=False, range=[0, 1]),
         yaxis=dict(
             title="Energía (eV)",
@@ -275,12 +324,19 @@ with pestanas[0]:
 
 # --- PESTAÑA 2: NIVELES DE ENERGÍA ---
 with pestanas[1]:
-    st.subheader("Cuantización de la Energía")
+    st.subheader("Cuantización de la Energía y Efecto Zeeman")
     col_graf, col_dat = st.columns([1.2, 1])
 
     with col_graf:
         nivel = st.slider("Seleccione el nivel de energía principal (n)", 1, 6, 3)
-        st.plotly_chart(crear_grafica_niveles(nivel), use_container_width=True)
+        
+        st.markdown("**Campo Magnético Externo (Efecto Zeeman)**")
+        campo_B = st.slider("Intensidad del campo magnético B (Tesla)", 0.0, 10.0, 0.0, 0.5)
+        
+        if campo_B > 0:
+            st.info(f"🔬 **Efecto Zeeman activado:** B = {campo_B:.1f} T. Los niveles se dividen según el número cuántico magnético m_l.")
+        
+        st.plotly_chart(crear_grafica_niveles(nivel, campo_B), use_container_width=True)
 
     with col_dat:
         energia = calcular_energia_nivel(nivel)
@@ -291,7 +347,49 @@ with pestanas[1]:
 
         st.markdown("**Ecuación de Bohr:**")
         st.latex(r"E_n = -\frac{13.6057 \text{ eV}}{n^2}")
+        
+        if campo_B > 0:
+            st.markdown("**Desplazamiento Zeeman:**")
+            st.latex(r"\Delta E = \mu_B \cdot B \cdot m_l")
+            st.write("Donde μ_B = 5.788×10⁻⁵ eV/T es el magnetón de Bohr.")
+        
         st.write("El signo negativo indica que el electrón se encuentra en un estado ligado. Cuando $n \\to \\infty$, $E \\to 0$, lo que corresponde al límite de ionización del átomo.")
+
+    # Sección explicativa del efecto Zeeman
+    if campo_B > 0:
+        st.divider()
+        st.subheader("📡 Efecto Zeeman: Aplicaciones en Telecomunicaciones")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### ¿Qué es el efecto Zeeman?")
+            st.write("""
+            Cuando un átomo se somete a un campo magnético externo, sus niveles de energía 
+            se **dividen** (splitting) en múltiples subniveles. Esto ocurre porque el momento 
+            magnético orbital del electrón interactúa con el campo magnético aplicado.
+            
+            La separación energética es proporcional a:
+            - La intensidad del campo magnético **B**
+            - El número cuántico magnético **m_l**
+            - El magnetón de Bohr **μ_B**
+            """)
+        
+        with col2:
+            st.markdown("### Aplicaciones en Telecomunicaciones")
+            st.write("""
+            1. **Fibra Óptica:** El efecto Zeeman se utiliza en aisladores ópticos y 
+               moduladores que controlan la polarización de la luz en redes de fibra óptica.
+            
+            2. **Espectroscopía:** Permite identificar elementos químicos en estrellas y 
+               plasmas mediante el análisis de líneas espectrales divididas.
+            
+            3. **Resonancia Magnética:** Técnica basada en transiciones entre niveles 
+               divididos por campo magnético, usada en telecomunicaciones cuánticas.
+            
+            4. **Antenas y Propagación:** Los campos magnéticos afectan la propagación 
+               de ondas electromagnéticas en el medio interestelar y la ionosfera.
+            """)
 
 # --- PESTAÑA 3: TRANSICIONES Y ESPECTRO ---
 with pestanas[2]:
